@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style>
+		*{
+			margin: 0;
+			padding:0;
+		}
+		body{
+			background-color: black;
+			overflow: hidden;
+		}
+		.box{
+			width: 1200px;
+			height: 400px;
+			margin: 30px auto;
+			position: relative;
+			perspective: 500px; 
+		}
+		.box ul{
+			list-style: none;
+		}
+		.box ul li{
+			position: absolute;
+			width: 600px;
+			height: 333.3px;
+			top:50%;
+			left:50%;
+			margin-left: -300px;
+			margin-top: -196.66px;
+			/*过渡，它会自动“补间”*/
+			transition:all .2s ease 0s;
+		}
+		.box ul li img{
+			width: 600px;
+			height: 333.3px;
+		}
+		.box .bar{
+			position: absolute;
+			bottom:0;
+			left:0;
+			width: 1200px;
+			height: 30px;
+			background-color: #333;
+			z-index: 9999;
+		}
+		.box .bar b{
+			display: block;
+			width: 120px;
+			height: 30px;
+			background-color: orange;
+			border-radius: 10px;
+		}
+		.daoying{
+			position: absolute;
+			top:333.33px;
+			left:0;
+			transform: rotate(180deg) rotateY(180deg);
+		}
+		.mask{
+			position: absolute;
+			top:333.33px;
+			left:0;
+			width: 100%;
+			height: 100%;
+			background: -webkit-linear-gradient(top, rgba(0,0,0,.4),rgba(0,0,0,1));
+		}
+	</style>
+</head>
+<body>
+	<div class="box">
+		<ul>
+			<li>
+				<img src="images/0.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/1.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/2.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/3.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/4.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/5.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/6.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/7.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/8.jpg" alt="">
+			</li>
+			<li>
+				<img src="images/9.jpg" alt="">
+			</li>
+		</ul>
+		<div class="bar">
+			<b></b>
+		</div>
+	</div>
+
+	<script type="text/javascript" src="js/jQuery.js"></script>
+	<script type="text/javascript" src="js/jQuery-mousewheel.min.js"></script>
+	<script type="text/javascript" src="js/jQueryUI.js"></script>
+	<script type="text/javascript">
+		// 制作倒影，克隆li里面的图片
+		$('ul li img').each(function(){
+			$(this).clone().addClass('daoying').appendTo($(this).parent());
+			// 创建标签
+			$('<div class="mask"></div>').appendTo($(this).parent());
+		});
+
+		// 信号量，居中图片的下标
+		var idx = 0;
+		// 节流锁
+		var lock = true;
+
+		// 监听鼠标滚动
+		$('.box').on('mousewheel', function(event) {
+			// 阻止默认事件
+			event.preventDefault();
+			// 判断节流锁是不是打开状态，如果是，则进行改变信号量
+			if (lock) {
+				// 下滚是负数，上滚是正数，信号量随之改变
+				if(event.deltaY < 0){
+					idx ++;
+				}else{
+					idx --;
+				}
+			    // 验收信号量
+			    if (idx < 0) idx = 0;
+			    if (idx > 9) idx = 9;
+			    setTransform();
+
+			    // 让滑块跟着动
+			    $('.bar b').css('left', idx * 120);
+
+			    // 关闭节流锁
+			    lock = false;
+
+			    // 什么时候要再打开节流锁呀？？0.4s之后
+			    setTimeout(function(){
+			    	lock = true;
+			    }, 100);
+			}
+		});
+
+		// 鼠标拖拽
+		$('.bar b').draggable({
+			// 容器，是爸爸
+			'containment': 'parent',
+			// 咯噔。纵向咯噔是0，横向是120。
+			'grid': [120 ,0],
+			// 事件
+			'drag': function(a, b){
+				// 看这个数字有几个120，让信号量改变
+				var nidx = b.position.left / 120;
+				// 如果nidx和现有idx信号量不一样，再改，防止动画重复积累
+				if(nidx != idx){
+					idx = nidx;
+					setTransform();
+				}
+			}
+		});
+		 
+
+		setTransform();
+		function setTransform(){
+			// 怎么选择比3号大的那帮li？？gt、lt这些选择器。
+			$('.box li:gt(' + idx + ')').each(function(index){
+				$(this).css({
+					'transform': 'rotateY(-40deg) translateZ(' + (-120 + -200 * index) + 'px) translateX('+ 80 * index + 'px)',
+					'z-index': 9 - index
+				})
+			});
+
+			// 怎么选择比3号小的那帮li？？gt、lt这些选择器。
+			$('.box li:lt(' + idx + ')').each(function(index){
+				// index是正向编号，现在要倒过来，所以就要每个index用idx减。
+				// 比如0、1、2、3变为了3、2、1、0
+				$(this).css({
+					'transform': 'rotateY(40deg) translateZ(' + (-120 + -200 * (idx - index)) + 'px) translateX('+ -80 * (idx - index) + 'px)',
+					'z-index': 9 - (idx - index)
+				})
+			});
+
+			// 设置一下中间这个图的z-index
+			$('.box li').eq(idx).css({
+				'z-index': 10,
+				'transform': 'none'
+			});
+		}
+	</script>
+</body>
+</html>
